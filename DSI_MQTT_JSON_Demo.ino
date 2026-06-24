@@ -5,18 +5,16 @@ Broker       TB_Broker0;
 
 static const char* APN_CID     = "1";
 static const char* APN_TYPE    = "IP";
-static const char* APN_NAME    = "airtellive";   
+static const char* APN_NAME    = "your-apn";
 
-// MQTT over TLS to test.mosquitto.org
+// MQTT over TLS to the public Mosquitto test broker.
 static const char* MQTT_HOST   = "test.mosquitto.org";
 static const char* MQTT_PORT   = "8883";         
 static const char* CLIENT_ID   = "DSI-Node-01";  
 
-// Topics
 static const char* DATA_TOPIC   = "Test/DSI";
 static const char* STATUS_TOPIC = "test/topicmqtts"; 
 
-// Publish cadence (ms)
 static const uint32_t PUB_PERIOD_MS = 5000;
 
 uint32_t lastPub = 0;
@@ -51,8 +49,7 @@ static bool mqttStartAndConnect() {
 }
 
 static String buildJsonPayload() {
-  // Dummy sensor values 
-
+  // Demo values. Replace these with actual sensor readings.
   float k_type_c = 20.0f + (random(0, 3300) / 10.0f);   
   float ir_c     = 20.0f + (random(0, 1000) / 10.0f);   
   float ct1_a    = (random(0, 500) / 10.0f);            
@@ -99,7 +96,6 @@ void setup() {
     Serial.println(F("[OK] APN set"));
   }
 
-  // Optional: show signal
   String rssi;
   if (IIOT_Dev_kit.CSQ(&rssi)) {
     Serial.print(F("[INFO] CSQ: ")); Serial.println(rssi);
@@ -128,7 +124,7 @@ void loop() {
 
 
     if (!publishData()) {
-      Serial.println(F("[WARN] Publish failed — trying reconnect"));
+      Serial.println(F("[WARN] Publish failed - trying reconnect"));
       IIOT_Dev_kit.MQTT_DISCONNECT(&TB_Broker0);
       delay(500);
       if (mqttStartAndConnect()) {

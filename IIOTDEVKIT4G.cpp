@@ -156,7 +156,7 @@ bool IIOTDEVKIT4G::MQTT_SETUP(Broker *broker, String server, String port)
   Serial2.println("AT+CMQTTSTART");
   // wait for the success URC; if it never comes, see if we at least got OK
   if (!waitForURC("+CMQTTSTART: 0", 30000)) {
-    // OK without URC means “already started”—ignore it
+    // OK without URC means the MQTT service may already be started.
     waitForOK(1000);
   }
   return true;

@@ -1,157 +1,261 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>DSI Node – Live Telemetry</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- MQTT.js -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DSI Node - Live Telemetry</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
-    :root{ --bg:#0f172a; --card:#111827; --muted:#94a3b8; --ok:#22c55e; --bad:#ef4444; --ring:#1f2937; --text:#e5e7eb; }
-    *{ box-sizing:border-box; }
-    body{ margin:0; background:linear-gradient(180deg,#0b1220,#0f172a 40%); color:var(--text); font:16px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial;}
-    .wrap{ max-width:900px; margin:40px auto; padding:0 20px; }
-    h1{ margin:0 0 10px; font-size:clamp(22px,3vw,28px); letter-spacing:.2px; }
-    .sub{ color:var(--muted); margin-bottom:24px; }
-    .status{ display:flex; align-items:center; gap:10px; }
-    .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border:1px solid var(--ring); border-radius:999px; background:rgba(255,255,255,.02); }
-    .dot{ width:10px; height:10px; border-radius:50%; background:#64748b; box-shadow:0 0 0 2px rgba(255,255,255,.06) inset; }
-    .online{ background:var(--ok)!important; }
-    .offline{ background:var(--bad)!important; }
-    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    @media (max-width:720px){ .grid{ grid-template-columns:1fr; } }
-    .card{ background:var(--card); border:1px solid var(--ring); border-radius:16px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
-    .row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-top:1px dashed rgba(255,255,255,.06); }
-    .row:first-child{ border-top:0; padding-top:0; }
-    .name{ display:flex; align-items:center; gap:10px; font-weight:600; }
-    .val{ font-variant-numeric:tabular-nums; font-weight:600; }
-    .muted{ color:var(--muted); font-weight:500; }
-    .footer{ margin-top:18px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; color:var(--muted); }
-    .badge{ padding:4px 8px; border:1px solid var(--ring); border-radius:999px; }
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --ok: #22c55e;
+      --bad: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.5 system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .wrap {
+      margin: 36px auto;
+      max-width: 980px;
+      padding: 0 20px;
+    }
+
+    h1 {
+      font-size: 1.9rem;
+      margin: 0 0 8px;
+    }
+
+    .sub,
+    .muted {
+      color: var(--muted);
+    }
+
+    .status {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .pill,
+    .badge {
+      align-items: center;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      display: inline-flex;
+      gap: 8px;
+      padding: 6px 12px;
+    }
+
+    .dot {
+      background: #64748b;
+      border-radius: 50%;
+      height: 10px;
+      width: 10px;
+    }
+
+    .online {
+      background: var(--ok);
+    }
+
+    .offline {
+      background: var(--bad);
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr 1fr;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 720px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .row {
+      align-items: center;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 11px 0;
+    }
+
+    .row:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .name {
+      align-items: center;
+      display: flex;
+      font-weight: 600;
+      gap: 10px;
+    }
+
+    .val {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .footer {
+      color: var(--muted);
+      margin-top: 18px;
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>DSI Node – Live Telemetry</h1>
-    <div class="sub">Secure MQTT (wss) viewer for test.mosquitto.org</div>
+  <main class="wrap">
+    <h1>DSI Node - Live Telemetry</h1>
+    <p class="sub">WebSocket MQTT dashboard for the Arduino telemetry publisher.</p>
 
-    <div class="status">
+    <section class="status">
       <div class="pill"><span id="led" class="dot offline"></span><span id="statustext">Offline</span></div>
       <span id="broker" class="badge">wss://test.mosquitto.org:8081/mqtt</span>
-      <span id="topicData" class="badge">Topic: <code>Test/DSI</code></span>
-      <span id="topicStatus" class="badge">Status: <code>test/topicmqtts</code></span>
-    </div>
+      <span class="badge">Data topic: <code>Test/DSI</code></span>
+      <span class="badge">Status topic: <code>test/topicmqtts</code></span>
+    </section>
 
-    <div class="grid" style="margin-top:18px;">
+    <section class="grid">
       <div class="card">
         <div class="row">
-          <div class="name"><span class="dot offline" id="d1"></span>Temperature 1 (K-type)</div>
-          <div class="val"><span id="k_type_c">—</span> <span class="muted">°C</span></div>
+          <div class="name"><span class="dot offline" id="d1"></span>K-type temperature</div>
+          <div class="val"><span id="k_type_c">--</span> <span class="muted">C</span></div>
         </div>
         <div class="row">
-          <div class="name"><span class="dot offline" id="d2"></span>Temperature 2 (IR)</div>
-          <div class="val"><span id="ir_c">—</span> <span class="muted">°C</span></div>
+          <div class="name"><span class="dot offline" id="d2"></span>IR temperature</div>
+          <div class="val"><span id="ir_c">--</span> <span class="muted">C</span></div>
         </div>
         <div class="row">
-          <div class="name"><span class="dot offline" id="d3"></span>Current 1</div>
-          <div class="val"><span id="ct1_a">—</span> <span class="muted">A</span></div>
+          <div class="name"><span class="dot offline" id="d3"></span>Current sensor 1</div>
+          <div class="val"><span id="ct1_a">--</span> <span class="muted">A</span></div>
         </div>
         <div class="row">
-          <div class="name"><span class="dot offline" id="d4"></span>Current 2</div>
-          <div class="val"><span id="ct2_a">—</span> <span class="muted">A</span></div>
+          <div class="name"><span class="dot offline" id="d4"></span>Current sensor 2</div>
+          <div class="val"><span id="ct2_a">--</span> <span class="muted">A</span></div>
         </div>
-        <div class="footer">
-          <span>Last update:</span><strong id="ts">—</strong>
-        </div>
+        <div class="footer">Last update: <strong id="ts">--</strong></div>
       </div>
 
       <div class="card">
-        <div class="row"><div class="name">Client ID</div><div id="cid" class="muted">—</div></div>
+        <div class="row"><div class="name">Client ID</div><div id="cid" class="muted">--</div></div>
         <div class="row"><div class="name">QoS</div><div class="muted">Subscribed at QoS 2</div></div>
-        <div class="row"><div class="name">Connection</div><div id="conn" class="muted">Connecting…</div></div>
-        <div class="row"><div class="name">Status payload</div><div id="statpayload" class="muted">—</div></div>
-        <div class="footer">Status follows retained **birth/LWT** messages from the status topic.</div>
+        <div class="row"><div class="name">Connection</div><div id="conn" class="muted">Connecting...</div></div>
+        <div class="row"><div class="name">Status payload</div><div id="statpayload" class="muted">--</div></div>
+        <div class="footer">Device status is driven by retained birth and last-will messages.</div>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 
   <script>
-    // --- SETTINGS ---
-    const WS_URL      = "wss://test.mosquitto.org:8081/mqtt";
-    const DATA_TOPIC  = "Test/DSI";
-    const STATUS_TOPIC= "test/topicmqtts";
-    const ONLINE_STR  = "DSI_ONLINE";
-    const OFFLINE_STR = "DSI_OFFLINE(LWT)"; // your LWT
+    const WS_URL = 'wss://test.mosquitto.org:8081/mqtt';
+    const DATA_TOPIC = 'Test/DSI';
+    const STATUS_TOPIC = 'test/topicmqtts';
+    const ONLINE_STR = 'DSI_ONLINE';
+    const OFFLINE_STR = 'DSI_OFFLINE(LWT)';
 
-    // --- UI helpers ---
-    const $ = id => document.getElementById(id);
-    const setDeviceDots = (isOnline) => {
-      for (const id of ["led","d1","d2","d3","d4"]) {
+    const $ = (id) => document.getElementById(id);
+
+    function setDeviceOnline(isOnline) {
+      for (const id of ['led', 'd1', 'd2', 'd3', 'd4']) {
         const el = $(id);
-        el.classList.remove("online","offline");
-        el.classList.add(isOnline ? "online" : "offline");
+        el.classList.remove('online', 'offline');
+        el.classList.add(isOnline ? 'online' : 'offline');
       }
-      $("statustext").textContent = isOnline ? "Online" : "Offline";
-    };
-    const setConn = t => $("conn").textContent = t;
+      $('statustext').textContent = isOnline ? 'Online' : 'Offline';
+    }
 
-    // --- MQTT client ---
-    const clientId = "websub-" + Math.random().toString(16).slice(2);
-    $("cid").textContent = clientId;
+    const clientId = `websub-${Math.random().toString(16).slice(2)}`;
+    $('cid').textContent = clientId;
+    $('broker').textContent = WS_URL;
 
     const client = mqtt.connect(WS_URL, {
       clientId,
       clean: true,
       keepalive: 30,
       reconnectPeriod: 2000,
-      connectTimeout: 10000
+      connectTimeout: 10000,
     });
 
-    $("broker").textContent = WS_URL;
-
-    client.on("connect", () => {
-      setConn("Connected");
-      client.subscribe([DATA_TOPIC, STATUS_TOPIC], { qos: 2 }, err => {
-        if (err) setConn("Subscribe error: " + err.message);
+    client.on('connect', () => {
+      $('conn').textContent = 'Connected';
+      client.subscribe([DATA_TOPIC, STATUS_TOPIC], { qos: 2 }, (err) => {
+        if (err) {
+          $('conn').textContent = `Subscribe error: ${err.message}`;
+        }
       });
     });
 
-    client.on("reconnect", () => setConn("Reconnecting…"));
-    client.on("close", () => setConn("Disconnected"));
-    client.on("error",  (e) => setConn("Error: " + e.message));
+    client.on('reconnect', () => {
+      $('conn').textContent = 'Reconnecting...';
+    });
 
-    // status is driven by retained birth/LWT on STATUS_TOPIC
-    client.on("message", (topic, payload) => {
+    client.on('close', () => {
+      $('conn').textContent = 'Disconnected';
+    });
+
+    client.on('error', (err) => {
+      $('conn').textContent = `Error: ${err.message}`;
+    });
+
+    client.on('message', (topic, payload) => {
       const text = payload.toString();
 
       if (topic === STATUS_TOPIC) {
-        $("statpayload").textContent = text;
-        if (text === ONLINE_STR) {
-          setDeviceDots(true);
-        } else if (text === OFFLINE_STR) {
-          setDeviceDots(false);
-        } // else ignore other custom messages
+        $('statpayload').textContent = text;
+        if (text === ONLINE_STR) setDeviceOnline(true);
+        if (text === OFFLINE_STR) setDeviceOnline(false);
         return;
       }
 
-      if (topic === DATA_TOPIC) {
-        try {
-          const data = JSON.parse(text);
-          const map  = {
-            k_type_c: v => Number(v).toFixed(1),
-            ir_c:     v => Number(v).toFixed(1),
-            ct1_a:    v => Number(v).toFixed(1),
-            ct2_a:    v => Number(v).toFixed(1),
-          };
-          for (const k in map) {
-            if (k in data) $(k).textContent = map[k](data[k]);
+      if (topic !== DATA_TOPIC) return;
+
+      try {
+        const data = JSON.parse(text);
+        const formatters = {
+          k_type_c: (v) => Number(v).toFixed(1),
+          ir_c: (v) => Number(v).toFixed(1),
+          ct1_a: (v) => Number(v).toFixed(1),
+          ct2_a: (v) => Number(v).toFixed(1),
+        };
+
+        for (const key of Object.keys(formatters)) {
+          if (key in data) {
+            $(key).textContent = formatters[key](data[key]);
           }
-          $("ts").textContent = new Date().toLocaleString();
-        } catch (e) {
-          // JSON error: ignore (no raw log requested)
         }
+        $('ts').textContent = new Date().toLocaleString();
+      } catch {
+        $('conn').textContent = 'Received invalid JSON payload';
       }
     });
   </script>
 </body>
 </html>
+

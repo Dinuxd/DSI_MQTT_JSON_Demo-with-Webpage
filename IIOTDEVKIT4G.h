@@ -1,11 +1,9 @@
-// File: IIOTDEVKIT4G.h
-
 #ifndef IIOTDEVKIT4G_H
 #define IIOTDEVKIT4G_H
 
 #include <Arduino.h>
 
-// ← CHANGED: embed CA certificate for test.mosquitto.org (PEM format)
+// CA certificate for test.mosquitto.org.
 static const char mosq_ca_cert[] PROGMEM = R"EOF(
 -----BEGIN CERTIFICATE-----
 MIIEAzCCAuugAwIBAgIUBY1hlCGvdj4NhBXkZ/uLUZNILAwwDQYJKoZIhvcNAQEL
